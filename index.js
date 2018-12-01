@@ -12,6 +12,7 @@ class NomadHelper {
     this.routes = []
     this.requestsSent = 0
     this.requestsResponded = 0
+    this.requestsErrors = 0
 
     this.inputStartDateEl = document.getElementById('startDate')
     this.inputHomeAirportEl = document.getElementById('homeAirport')
@@ -25,6 +26,8 @@ class NomadHelper {
     this.resultEl = document.getElementById('result')
     this.searchResultInputEl = document.getElementById('searchResultInput')
     this.progressEl = document.getElementById('progress')
+    this.storageSaveEl = document.getElementById('storageSave')
+    this.storageLoadEl = document.getElementById('storageLoad')
 
     this.inputStartDateEl.value = this.startDate.toISOString().substr(0, 10)
     this.searchResultInputEl.hidden = true
@@ -33,6 +36,19 @@ class NomadHelper {
       const diff = (this.inputLimitResultsPerRoundEl.value * this.inputVisitedCitiesMaxEl.value)
       this.progressEl.innerText = diff > 23 ? 'go for coffee :)' : diff > 15 ? 'this will take long time to process!' : diff > 10 ? 'this can take little longer..' : ''
       this.progressEl.style.color = diff > 10 ? '#ac0e00' : '#333'
+    })
+    this.storageSaveEl.addEventListener('click', () => {
+      const label = prompt('Save as:', `${this.homeAirport} - ${this.fmtDate(this.startDate)} (dest: ${this.visitedCitiesMax}, depth: ${this.limitResultsPerRound})`)
+      if (label && label.length > 0) {
+        this.storageSave(label)
+      }
+    })
+    this.storageLoadLabels()
+    this.storageLoadEl.addEventListener('change', () => {
+      const label = this.storageLoadEl.options[this.storageLoadEl.selectedIndex].value
+      if (label && label.length > 0) {
+        this.storageLoad(label);
+      }
     })
     this.btnScanEl.addEventListener('click', () => {
       this.startDate = new Date(this.inputStartDateEl.value)
@@ -96,6 +112,7 @@ class NomadHelper {
       .catch(e => {
         console.error(e)
         this.requestsResponded++
+        this.requestsErrors++
         this.updateProgress()
       })
       .then(resJson => {
@@ -107,7 +124,7 @@ class NomadHelper {
           }
           resJson.data.forEach(d => {
             if (!this.isAirportVisited(route, d.flyTo)) {
-              const r = {};
+              const r = {}
               r.fromAirport = d.flyFrom
               r.fromCity = d.cityFrom
               r.fromDate = options.date_from
@@ -158,7 +175,7 @@ class NomadHelper {
                   this.sortRoutes()
                 }
                 if ((this.visitedCitiesMax * this.limitResultsPerRound) < 8 || this.requestsResponded % Math.floor(this.routes.length / 5) === 0) {
-                  this.renderResult(this.routes);
+                  this.renderResult(this.routes)
                 }
                 if (this.requestsSent === this.requestsResponded) {
                   this.updateProgress(true)
@@ -171,6 +188,7 @@ class NomadHelper {
       .catch(e => {
         console.error(e)
         this.requestsResponded++
+        this.requestsErrors++
         this.updateProgress()
       })
   }
@@ -197,6 +215,14 @@ class NomadHelper {
       }
       this.requestsSent = 0
       this.requestsResponded = 0
+    } else if (this.requestsSent > 0 && this.requestsSent - 1 === this.requestsResponded) {
+      this.btnScanEl.innerText = `processing`
+      this.btnScanEl.disabled = true
+    } else if (this.requestsErrors > 0 || (this.requestsSent === 0 && this.requestsResponded > 0)) {
+      this.btnScanEl.innerText = `error`
+      this.btnScanEl.disabled = true
+      this.progressEl.innerText = 'some requests responded with error'
+      this.progressEl.style.color = '#ac0e00'
     } else {
       this.btnScanEl.innerText = `${this.requestsResponded}/${this.requestsSent}`
       this.btnScanEl.disabled = true
@@ -240,11 +266,95 @@ class NomadHelper {
       `
   }
 
+  storageSave(label) {
+    const data = {
+      startDate: this.startDate,
+      homeAirport: this.homeAirport,
+      currency: this.currency,
+      adults: this.adults,
+      minNightsInCity: this.minNightsInCity,
+      maxNightsInCity: this.maxNightsInCity,
+      visitedCitiesMax: this.visitedCitiesMax,
+      maxFlightDurationH: this.maxFlightDurationH,
+      limitResultsPerRound: this.limitResultsPerRound,
+      routes: this.routes,
+    }
+    if (!!window.localStorage.getItem(`nomad-helper-${label}`)) {
+      alert('label already exists, pick another')
+      return
+    }
+    window.localStorage.setItem(`nomad-helper-${label}`, JSON.stringify(data))
+    let labels = []
+    try {
+      labels = JSON.parse(window.localStorage.getItem('nomad-helper-labels')) || []
+    } catch (e) {
+      label = []
+    }
+    labels.push(label)
+    window.localStorage.setItem('nomad-helper-labels', JSON.stringify(labels))
+    this.storageLoadLabels()
+  }
+
+  storageLoad(label) {
+    if (this.routes && this.routes.length > 0 && !confirm('there are unsaved results, discard and load?')) {
+      return
+    }
+    const dataStr = window.localStorage.getItem(`nomad-helper-${label}`)
+    if (dataStr && dataStr.length > 0) {
+      try {
+        const data = JSON.parse(dataStr)
+        this.startDate = new Date(data.startDate)
+        this.homeAirport = data.homeAirport
+        this.currency = data.currency
+        this.adults = data.adults
+        this.minNightsInCity = data.minNightsInCity
+        this.maxNightsInCity = data.maxNightsInCity
+        this.visitedCitiesMax = data.visitedCitiesMax
+        this.maxFlightDurationH = data.maxFlightDurationH
+        this.limitResultsPerRound = data.limitResultsPerRound
+        this.routes = data.routes
+
+        this.inputStartDateEl.value = this.startDate.toISOString().substr(0, 10)
+        this.inputHomeAirportEl.value = this.homeAirport
+        this.inputCurrencyEl.value = this.currency
+        this.inputAdultsEl.value = this.adults
+        this.inputMinNightsInCityEl.value = this.minNightsInCity
+        this.inputMaxNightsInCityEl.value = this.maxNightsInCity
+        this.inputLimitResultsPerRoundEl.value = this.limitResultsPerRound
+        this.searchResultInputEl.hidden = false
+        this.renderResult(this.routes)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }
+
+  storageLoadLabels() {
+    const dataStr = window.localStorage.getItem('nomad-helper-labels')
+    try {
+      const data = JSON.parse(dataStr) || []
+      for (let i = 0; i < this.storageLoadEl.options.length; i++) {
+        this.storageLoadEl.options.remove(i)
+      }
+      const defaultOption = document.createElement('option')
+      defaultOption.innerText = 'load'
+      this.storageLoadEl.options.add(defaultOption)
+      data.forEach(label => {
+        const option = document.createElement('option')
+        option.value = label
+        option.innerText = label
+        this.storageLoadEl.options.add(option)
+      })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   isAirportVisited(route, airport) {
     if (airport === this.homeAirport) {
       return false
     }
-    const isVisited = route.filter(r => r.fromAirport === airport || r.toAirport === airport);
+    const isVisited = route.filter(r => r.fromAirport === airport || r.toAirport === airport)
     return isVisited.length > 0
   }
 
@@ -255,14 +365,14 @@ class NomadHelper {
   }
 
   getDaysBetweenDates(firstDate, secondDate) {
-    return Math.round(Math.abs((firstDate.getTime() - secondDate.getTime()) / (24 * 60 * 60 * 1000)));
+    return Math.round(Math.abs((firstDate.getTime() - secondDate.getTime()) / (24 * 60 * 60 * 1000)))
   }
 
   fmtDate(date, isSimpleFmt = false) {
     if (isSimpleFmt) {
       return date.toISOString().substr(0, 16).replace('T', ' ')
     }
-    return `${date.getDate() < 10 ? ('0' + date.getDate().toString()) : date.getDate()}/${date.getMonth() < 9 ? ('0' + (date.getMonth() + 1).toString()) : (date.getMonth() + 1)}/${date.getFullYear()}`;
+    return `${date.getDate() < 10 ? ('0' + date.getDate().toString()) : date.getDate()}/${date.getMonth() < 9 ? ('0' + (date.getMonth() + 1).toString()) : (date.getMonth() + 1)}/${date.getFullYear()}`
   }
 }
 
