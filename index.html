@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>nomad helper</title>
+  <style>
+    * {
+      font-family: "Comic Sans MS", cursive, sans-serif;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+    main {
+      width: 80%;
+      margin: 1rem auto;
+    }
+    #page-heading {
+      font-size: 2rem;
+      padding: 1rem;
+      border-top: 3px solid #333;
+      background-color: rgba(119, 119, 119, 0.11);
+    }
+    .row-route {
+      margin-top: 1rem;
+      border-top: 3px solid #333;
+    }
+    .row-route-heading {
+      padding: 0.5rem;
+      background-color: rgba(119, 119, 119, 0.11);
+    }
+    .row-flight {
+      /*border-bottom: 1px dashed #777;*/
+      margin: 0.5rem 0.5rem 0 0.5rem;
+    }
+    input {
+      height: 1.25rem;
+      width: 10rem;
+      float: right;
+    }
+    #searchResultInput {
+      float: left;
+      margin-top: 0.5rem;
+    }
+    .margin-bottom {
+      margin-bottom: 1rem;
+    }
+    .row-btn-container,
+    .row-input-container {
+      line-height: 1.5rem;
+      clear: both;
+    }
+    .row-input-container:hover,
+    .row-input-container:active {
+      background-color: rgba(119, 119, 119, 0.32);
+    }
+    .row-btn-container {
+      margin-top: 1rem;
+    }
+    .row-alert {
+      color: #ac0e00;
+    }
+    .route-price,
+    .flight-price {
+      font-weight: 600;
+      float: right;
+    }
+    .coll-25 {
+      display: inline-block;
+      width: 25%;
+    }
+    #btnScan {
+      float: right;
+      padding-bottom: 0.2rem;
+      width: 10.25rem;
+      font-size: 1.2rem;
+      border: 3px solid #333333;
+      background-color: #777777;
+      font-weight: 600;
+      color: #fff;
+    }
+    #btnScan:hover {
+      background-color: #555;
+    }
+    #btnScan:active {
+      background-color: #ac0e00;
+      color: #ff7000;
+    }
+    #btnScan:disabled {
+      background-color: #fff;
+      color: #777;
+    }
+    #progress {
+      margin-top: 0.55rem;
+      margin-left: 2rem;
+    }
+  </style>
+</head>
+<body>
+<div id="page-heading">nomad helper</div>
+<main>
+  <div class="margin-bottom">
+    <div class="row-input-container">
+      <label for="startDate">start date</label>
+      <input type="date" id="startDate">
+    </div>
+    <div class="row-input-container">
+      <label for="homeAirport">home airport</label>
+      <input type="text" value="PRG" id="homeAirport">
+    </div>
+    <div class="row-input-container">
+      <label for="currency">currency</label>
+      <input type="text" value="CZK" id="currency">
+    </div>
+    <div class="row-input-container">
+      <label for="adults">adults</label>
+      <input type="number" min="1" max="10" value="1" id="adults">
+    </div>
+    <div class="row-input-container">
+      <label for="minNightsInCity">min nights in destination</label>
+      <input type="number" min="1" max="30" value="1" id="minNightsInCity">
+    </div>
+    <div class="row-input-container">
+      <label for="maxNightsInCity">max nights in destination</label>
+      <input type="number" min="1" max="30" value="7" id="maxNightsInCity">
+    </div>
+    <div class="row-input-container">
+      <label for="visitedCitiesMax">max destinations to visit, excluding start and end destination</label>
+      <input type="number" min="1" max="10" value="1" id="visitedCitiesMax">
+    </div>
+    <div class="row-input-container">
+      <label for="limitResultsPerRound">max flights per scan round - scan depth (<strong title="(max destinations * scan depth) > 5 results in > 100 requests">carefully</strong> combine with max destinations!)</label>
+      <input type="number" min="1" max="30" value="3" id="limitResultsPerRound">
+    </div>
+    <div class="row-btn-container">
+      <button id="btnScan">scan</button>
+      <input type="text" placeholder="search" id="searchResultInput">
+      <div class="coll-25">
+        <div id="progress"></div>
+      </div>
+    </div>
+  </div>
+  <div id="result"></div>
+</main>
+<script src="index.js"></script>
+</body>
+</html>
