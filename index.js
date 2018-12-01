@@ -1,17 +1,3 @@
-// class FlightRoute {
-//   fromAirport: ''
-//   fromCity: ''
-//   fromDate: ''
-//   departureTime: ''
-//   toAirport: ''
-//   toCity: ''
-//   toDate: ''
-//   arrivalTime: ''
-//   flightDuration: ''
-//   price: ''
-//   kiwiObj: {}
-// }
-
 class NomadHelper {
   constructor() {
     this.startDate = new Date()
@@ -103,7 +89,6 @@ class NomadHelper {
       .map(key => `${key}=${options[key]}`)
       .join('&')
     const apiUrl = `https://api.skypicker.com/flights?${getParamsFromOptions()}`
-    // console.warn('scan with route', route ? route.length : null); // TODO: remove
     this.requestsSent++
     this.updateProgress()
     fetch(apiUrl)
@@ -134,10 +119,7 @@ class NomadHelper {
               r.flightDuration = d.fly_duration
               r.price = d.price
               r.kiwiObj = d
-              // route.push(r)
-              // this.routes[this.visitedCitiesCount].push(r)
               if (route.length < this.visitedCitiesMax) {
-                // scan next round
                 this.scan({
                   partner: 'picky',
                   curr: this.currency,
@@ -154,7 +136,6 @@ class NomadHelper {
                 }, [...route, r])
               }
               if (route.length === this.visitedCitiesMax) {
-                // console.warn('last round', route); // TODO: remove
                 this.scan({
                   partner: 'picky',
                   curr: this.currency,
@@ -172,7 +153,6 @@ class NomadHelper {
               }
               if (route.length === this.visitedCitiesMax + 1) {
                 const result = [...route, r]
-                // console.warn('ROUTE END', result, result.map(r => r.price).reduce((a, b) => a + b)) // TODO: remove
                 this.routes.push(result)
                 if ((this.visitedCitiesMax * this.limitResultsPerRound) < 6) {
                   this.sortRoutes()
