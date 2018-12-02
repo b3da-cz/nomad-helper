@@ -135,7 +135,9 @@ class NomadHelper {
               r.arrivalTime = d.aTimeUTC
               r.flightDuration = d.fly_duration
               r.price = d.price
-              r.kiwiObj = d
+              r.flightsPerRoute = d.pnr_count
+              r.deepLink = d.deep_link
+              r.airlines = d.airlines
               if (route.length < this.visitedCitiesMax) {
                 this.scan({
                   partner: 'picky',
@@ -245,13 +247,13 @@ class NomadHelper {
           <div class="row-route">
             <div class="row-route-heading"><strong>${rowRoute.map(r => r.fromCity).join(' - ')} &nbsp; &nbsp; (${this.getDaysBetweenDates(new Date(rowRoute[0].departureTime * 1000), new Date(rowRoute[rowRoute.length - 1].arrivalTime * 1000))} days)</strong> <strong class="route-price">${rowRoute.map(r => r.price).reduce((a, b) => a + b)} ${this.currency}</strong></div>
             ${rowRoute.map(rowFlight => (`
-            <div class="row-flight ${rowFlight.kiwiObj.pnr_count > 1 ? 'row-alert' : ''}" ${rowFlight.kiwiObj.pnr_count > 1 ? ('title="transfers: ' + (rowFlight.kiwiObj.pnr_count - 1) + ' !"') : ''}>
+            <div class="row-flight ${rowFlight.flightsPerRoute > 1 ? 'row-alert' : ''}" ${rowFlight.flightsPerRoute > 1 ? ('title="transfers: ' + (rowFlight.flightsPerRoute - 1) + ' !"') : ''}>
               <div>
-                <div class="flight-price"><a href="${rowFlight.kiwiObj.deep_link}">${rowFlight.price} ${this.currency}</a></div>
+                <div class="flight-price"><a href="${rowFlight.deepLink}">${rowFlight.price} ${this.currency}</a></div>
                 <div>
                   <div class="coll-25">${rowFlight.fromCity} (${rowFlight.fromAirport})</div>
                   <div class="coll-25">${this.fmtDate(new Date(rowFlight.departureTime * 1000), true)}</div>
-                  <div class="coll-25">${rowFlight.kiwiObj.airlines.join(',')}</div>
+                  <div class="coll-25">${rowFlight.airlines.join(',')}</div>
                  </div>
                 <div>
                   <div class="coll-25">${rowFlight.toCity} (${rowFlight.toAirport})</div>
@@ -278,12 +280,17 @@ class NomadHelper {
       maxFlightDurationH: this.maxFlightDurationH,
       limitResultsPerRound: this.limitResultsPerRound,
       routes: this.routes,
-    }
+    };
     if (!!window.localStorage.getItem(`nomad-helper-${label}`)) {
       alert('label already exists, pick another')
       return
     }
-    window.localStorage.setItem(`nomad-helper-${label}`, JSON.stringify(data))
+    try {
+      window.localStorage.setItem(`nomad-helper-${label}`, JSON.stringify(data))
+    } catch (e) {
+      alert(e.message)
+      return
+    }
     let labels = []
     try {
       labels = JSON.parse(window.localStorage.getItem('nomad-helper-labels')) || []
@@ -330,6 +337,7 @@ class NomadHelper {
   }
 
   storageLoadLabels() {
+    const getKbCount = label => ((encodeURI(window.localStorage.getItem(`nomad-helper-${label}`)).split(/%..|./).length - 1) / 1024).toFixed(1)
     const dataStr = window.localStorage.getItem('nomad-helper-labels')
     try {
       const data = JSON.parse(dataStr) || []
@@ -342,7 +350,7 @@ class NomadHelper {
       data.forEach(label => {
         const option = document.createElement('option')
         option.value = label
-        option.innerText = label
+        option.innerText = `${label} (${getKbCount(label)} Kb)`
         this.storageLoadEl.options.add(option)
       })
     } catch (e) {
